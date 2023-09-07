@@ -30,4 +30,31 @@ contract Marketplace is ReentrancyGuard, Ownable {
         address owner,
         uint listPrice
     );
+
+    function createListing(
+        uint tokenId,
+        address nftAddress,
+        uint price
+    ) public nonReentrant {
+        require(price > 0, "List price must be 1 wei >=");
+        marketplaceIds.increment();
+        uint marketplaceItemId = marketplaceIds.current();
+        marketplaceIdToListingItem[marketplaceItemId] = Listing(
+            marketplaceItemId,
+            nftAddress,
+            tokenId,
+            payable(msg.sender),
+            payable(address(0)),
+            price
+        );
+        IERC721(nftAddress).transferFrom(msg.sender, address(this), tokenId);
+        emit ListingCreated(
+            marketplaceItemId,
+            nftAddress,
+            tokenId,
+            msg.sender,
+            address(0),
+            price
+        );
+    }
 }
