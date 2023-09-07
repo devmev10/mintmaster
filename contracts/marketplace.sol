@@ -57,4 +57,55 @@ contract Marketplace is ReentrancyGuard, Ownable {
             price
         );
     }
+
+    function buyListing(
+        uint marketplaceItemId,
+        address nftAddress
+    ) public payable nonReentrant {
+        uint price = marketplaceIdToListingItem[marketplaceItemId].listPrice;
+        require(
+            msg.value == price,
+            "Value sent does not meet list price for NFT"
+        );
+        uint tokenId = marketplaceIdToListingItem[marketplaceItemId].tokenId;
+        marketplaceIdToListingItem[marketplaceItemId].seller.transfer(
+            msg.value
+        );
+        IERC721(nftAddress).transferFrom(address(this), msg.sender, tokenId);
+        marketplaceIdToListingItem[marketplaceItemId].owner = payable(
+            msg.sender
+        );
+        totalMarketplaceItemsSold.increment();
+    }
+
+    function getMarketItem(
+        uint marketplaceItemId
+    ) public view returns (Listing memory) {
+        return marketplaceIdToListingItem[marketplaceItemId];
+    }
+
+    function getMyListedNFTs() public view returns (Listing[] memory) {
+        uint totalListingCount = marketplaceIds.current();
+        uint listingCount = 0;
+        uint index = 0;
+
+        for (uint i = 0; i < totalListingCount; i++) {
+            if (marketplaceIdToListingItem[i + 1].owner == msg.sender) {
+                listingCount += 1;
+            }
+        }
+        Listing[] memory items = new Listing[](listingCount);
+        for (uint i = 0; i < totalListingCount; i++) {
+            if (marketplaceIdToListingItem[i + 1].owner == msg.sender) {
+                uint currentId = marketplaceIdToListingItem[i + 1]
+                    .marketplaceId;
+                Listing memory currentItem = marketplaceIdToListingItem[
+                    currentId
+                ];
+                items[index] = currentItem;
+                index += 1;
+            }
+        }
+        return items;
+    }
 }
